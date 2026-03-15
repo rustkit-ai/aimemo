@@ -41,7 +41,8 @@ curl -fsSL https://github.com/rustkit-ai/memo/releases/latest/download/install.s
 
 **brew**:
 ```sh
-brew install rustkit-ai/tap/memo
+brew tap rustkit-ai/memo https://github.com/rustkit-ai/memo
+brew install memo
 ```
 
 ---

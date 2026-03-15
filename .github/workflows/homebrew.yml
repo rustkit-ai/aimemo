@@ -5,14 +5,16 @@ on:
     types: [published]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   update-formula:
-    name: Update tap
+    name: Update Formula/memo.rb
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Get version
         id: version
@@ -31,34 +33,25 @@ jobs:
             sleep 30
           done
 
-      - name: Compute SHA256 hashes
-        id: hashes
+      - name: Compute SHA256 and update formula
         run: |
           VERSION=${{ steps.version.outputs.version }}
           BASE="https://github.com/rustkit-ai/memo/releases/download/v${VERSION}"
+
           for target in aarch64-apple-darwin x86_64-apple-darwin aarch64-unknown-linux-gnu x86_64-unknown-linux-gnu; do
             sha=$(curl -fsSL "${BASE}/memo-${target}.tar.gz" | sha256sum | awk '{print $1}')
-            echo "${target//-/_}_sha=${sha}" >> "$GITHUB_OUTPUT"
+            echo "${target}: ${sha}"
+            escaped=$(echo "$target" | sed 's/\./\\./g; s/-/\\-/g')
+            sed -i "/memo-${escaped}\.tar\.gz/{n;s|sha256 .*|sha256 \"${sha}\"|}" Formula/memo.rb
           done
 
-      - name: Update formula
-        run: |
-          VERSION=${{ steps.version.outputs.version }}
           sed -i "s/version \".*\"/version \"${VERSION}\"/" Formula/memo.rb
-          sed -i "/aarch64-apple-darwin/{n;s/sha256 .*/sha256 \"${{ steps.hashes.outputs.aarch64_apple_darwin_sha }}\"/}" Formula/memo.rb
-          sed -i "/x86_64-apple-darwin/{n;s/sha256 .*/sha256 \"${{ steps.hashes.outputs.x86_64_apple_darwin_sha }}\"/}" Formula/memo.rb
-          sed -i "/aarch64-unknown-linux-gnu/{n;s/sha256 .*/sha256 \"${{ steps.hashes.outputs.aarch64_unknown_linux_gnu_sha }}\"/}" Formula/memo.rb
-          sed -i "/x86_64-unknown-linux-gnu/{n;s/sha256 .*/sha256 \"${{ steps.hashes.outputs.x86_64_unknown_linux_gnu_sha }}\"/}" Formula/memo.rb
           cat Formula/memo.rb
 
-      - name: Push to homebrew-tap
-        uses: dmnemec/copy_file_to_another_repo_action@main
-        env:
-          API_TOKEN_GITHUB: ${{ secrets.HOMEBREW_TAP_TOKEN }}
-        with:
-          source_file: Formula/memo.rb
-          destination_repo: rustkit-ai/homebrew-tap
-          destination_folder: Formula
-          user_email: bot@rustkit.ai
-          user_name: rustkit-bot
-          commit_message: "Update memo to v${{ steps.version.outputs.version }}"
+      - name: Commit updated formula
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/memo.rb
+          git diff --staged --quiet || git commit -m "Update Homebrew formula to v${{ steps.version.outputs.version }}"
+          git push
