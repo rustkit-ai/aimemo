@@ -42,22 +42,105 @@ brew install rustkit-ai/tap/memo
 
 ---
 
-## Quickstart
+## How a session works with Claude Code
 
-### With Claude Code (automatic)
+### 1. One-time setup
 
-Run once in your project:
+Run this once in your project:
+
 ```sh
 memo setup
 ```
 
-That's it. `memo setup`:
-- Writes agent instructions into `CLAUDE.md`
-- Installs a Stop hook in `.claude/settings.json` so the context block refreshes automatically at the end of every session
+This does two things:
+- Writes agent instructions into `CLAUDE.md` so Claude knows to use memo
+- Installs a **Stop hook** in `.claude/settings.json` that runs `memo inject --claude` automatically when Claude finishes a session
 
-From then on, Claude remembers what happened last time without you doing anything.
+You never have to think about it again.
 
-### With any other agent
+---
+
+### 2. Work with Claude normally
+
+Open Claude Code and work as usual — ask questions, implement features, fix bugs. Claude will log what it does using `memo log` as it goes, following the instructions in `CLAUDE.md`.
+
+```
+You: implement the password reset flow
+
+Claude: [works on the feature]
+        memo log "implemented password reset: email token, 1h expiry, bcrypt hash"
+        memo log "todo: add rate limiting on /reset endpoint"
+```
+
+---
+
+### 3. Session ends — CLAUDE.md updates automatically
+
+When you close Claude Code, the Stop hook fires and runs `memo inject --claude`. Your `CLAUDE.md` is updated with a fresh context block:
+
+```markdown
+<!-- memo:start -->
+## memo context
+last: 2026-03-15 — "implemented password reset: email token, 1h expiry, bcrypt hash"
+todo: add rate limiting on /reset endpoint
+recent tags: auth · security · todo
+<!-- memo:end -->
+```
+
+No manual steps. No copy-pasting. It just happens.
+
+---
+
+### 4. Next session — Claude knows where it left off
+
+You open Claude Code the next day. Claude reads `CLAUDE.md` automatically at startup and immediately knows:
+
+- What was done last session
+- What's next on the todo list
+- What areas of the codebase were touched
+
+```
+You: j'ai fait quoi la dernière fois ?
+
+Claude: D'après le memo — tu as implémenté le password reset avec un token
+        email, expiration 1h, et hash bcrypt. Il reste à ajouter le rate
+        limiting sur /reset.
+```
+
+No re-exploration. No repeated questions. Claude picks up exactly where it left off.
+
+---
+
+## The full loop
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                                                         │
+│   memo setup          ← run once                       │
+│        │                                               │
+│        ▼                                               │
+│   Open Claude Code                                     │
+│        │                                               │
+│        ▼                                               │
+│   Claude reads CLAUDE.md  ←── context from last time   │
+│        │                                               │
+│        ▼                                               │
+│   Work: tasks, fixes, features                         │
+│        │                                               │
+│        ▼                                               │
+│   Claude logs: memo log "..."                          │
+│        │                                               │
+│        ▼                                               │
+│   Session ends → hook fires → CLAUDE.md updated ───┐  │
+│                                                     │  │
+│   Next session ◄────────────────────────────────────┘  │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## With any other agent
 
 Add this to your `CLAUDE.md` / `AGENTS.md` / system prompt:
 
@@ -67,23 +150,6 @@ Add this to your `CLAUDE.md` / `AGENTS.md` / system prompt:
 - Run `memo log "<what you did>"` after each significant task
 - Run `memo log "todo: <next step>"` before ending the session
 ```
-
----
-
-## How it works
-
-```
-Session 1                          Session 2
-─────────────────────────────────  ─────────────────────────────────
-agent runs `memo inject`    →      reads last context (~80 tokens)
-agent works on the project
-agent runs `memo log "..."`  →     stored in SQLite
-session ends, hook fires    →      CLAUDE.md updated automatically
-```
-
-Storage: SQLite at `~/.local/share/memo/<project-hash>.db`.
-Project identity: git remote URL hash (fallback: absolute path hash).
-No config files. No daemons. No background processes.
 
 ---
 
@@ -111,36 +177,9 @@ No config files. No daemons. No background processes.
 
 ---
 
-## Real-world example
-
-```sh
-# Agent starts a session
-$ memo inject
-## memo context
-last: 2026-03-14 — "added Stripe webhook handler"
-todo: write tests for webhook signature verification
-recent tags: stripe · payments · todo
-
-# Agent works, then logs what it did
-$ memo log "wrote tests for webhook handler, all passing" --tag stripe
-logged: wrote tests for webhook handler, all passing
-
-$ memo log "todo: deploy to staging and verify with Stripe dashboard"
-logged: todo: deploy to staging and verify with Stripe dashboard
-
-# Next session — agent knows exactly where to pick up
-$ memo inject
-## memo context
-last: 2026-03-15 — "wrote tests for webhook handler, all passing"
-todo: deploy to staging and verify with Stripe dashboard
-recent tags: stripe · payments · todo
-```
-
----
-
 ## Why not just use CLAUDE.md?
 
-You can write to `CLAUDE.md` manually — but that means you do the work. `memo` lets the **agent** maintain its own memory, automatically, without human intervention between sessions.
+You can write to `CLAUDE.md` manually — but that means **you** do the work. `memo` lets the agent maintain its own memory, automatically, without any human intervention between sessions.
 
 ---
 
