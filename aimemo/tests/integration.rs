@@ -2,13 +2,13 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::process::Command;
 
-fn memo_bin() -> PathBuf {
-    PathBuf::from(env!("CARGO_BIN_EXE_memo"))
+fn aimemo_bin() -> PathBuf {
+    PathBuf::from(env!("CARGO_BIN_EXE_aimemo"))
 }
 
 fn temp_home(test_name: &str) -> PathBuf {
     let dir = std::env::temp_dir().join(format!(
-        "memo_itest_{}_{}",
+        "aimemo_itest_{}_{}",
         test_name,
         std::process::id()
     ));
@@ -18,12 +18,12 @@ fn temp_home(test_name: &str) -> PathBuf {
     dir
 }
 
-fn run_memo(home: &PathBuf, args: &[&str]) -> std::process::Output {
-    run_memo_with_bin_on_path(home, args, false)
+fn run_aimemo(home: &PathBuf, args: &[&str]) -> std::process::Output {
+    run_aimemo_with_bin_on_path(home, args, false)
 }
 
-fn run_memo_with_bin_on_path(home: &PathBuf, args: &[&str], bin_on_path: bool) -> std::process::Output {
-    let bin = memo_bin();
+fn run_aimemo_with_bin_on_path(home: &PathBuf, args: &[&str], bin_on_path: bool) -> std::process::Output {
+    let bin = aimemo_bin();
     let mut cmd = Command::new(&bin);
     cmd.args(args)
         .env("HOME", home)
@@ -38,21 +38,21 @@ fn run_memo_with_bin_on_path(home: &PathBuf, args: &[&str], bin_on_path: bool) -
         let new_path = format!("{}{sep}{}", bin_dir.display(), path_env);
         cmd.env("PATH", new_path);
     }
-    cmd.output().expect("failed to run memo")
+    cmd.output().expect("failed to run aimemo")
 }
 
 #[test]
 fn test_log_and_list() {
     let home = temp_home("log_list");
 
-    let out = run_memo(&home, &["log", "hello world"]);
+    let out = run_aimemo(&home, &["log", "hello world"]);
     let stdout = String::from_utf8_lossy(&out.stdout);
-    assert!(out.status.success(), "memo log failed: {:?}", out);
+    assert!(out.status.success(), "aimemo log failed: {:?}", out);
     assert!(stdout.contains("logged: hello world"), "unexpected output: {}", stdout);
 
-    let list_out = run_memo(&home, &["list"]);
+    let list_out = run_aimemo(&home, &["list"]);
     let list_stdout = String::from_utf8_lossy(&list_out.stdout);
-    assert!(list_out.status.success(), "memo list failed: {:?}", list_out);
+    assert!(list_out.status.success(), "aimemo list failed: {:?}", list_out);
     assert!(list_stdout.contains("hello world"), "entry not in list: {}", list_stdout);
 }
 
@@ -60,12 +60,12 @@ fn test_log_and_list() {
 fn test_search() {
     let home = temp_home("search");
 
-    run_memo(&home, &["log", "findme needle in haystack"]);
-    run_memo(&home, &["log", "unrelated entry"]);
+    run_aimemo(&home, &["log", "findme needle in haystack"]);
+    run_aimemo(&home, &["log", "unrelated entry"]);
 
-    let out = run_memo(&home, &["search", "needle"]);
+    let out = run_aimemo(&home, &["search", "needle"]);
     let stdout = String::from_utf8_lossy(&out.stdout);
-    assert!(out.status.success(), "memo search failed: {:?}", out);
+    assert!(out.status.success(), "aimemo search failed: {:?}", out);
     assert!(stdout.contains("findme needle"), "search didn't find entry: {}", stdout);
     assert!(!stdout.contains("unrelated"), "search returned unrelated entry: {}", stdout);
 }
@@ -74,10 +74,10 @@ fn test_search() {
 fn test_delete() {
     let home = temp_home("delete");
 
-    run_memo(&home, &["log", "entry to delete"]);
+    run_aimemo(&home, &["log", "entry to delete"]);
 
     // Get the ID from list output
-    let list_out = run_memo(&home, &["list"]);
+    let list_out = run_aimemo(&home, &["list"]);
     let list_stdout = String::from_utf8_lossy(&list_out.stdout);
 
     // Parse id from output: "#<id> ..."
@@ -89,9 +89,9 @@ fn test_delete() {
         .next()
         .expect("no entry id found in list output");
 
-    let delete_out = run_memo(&home, &["delete", id_str]);
+    let delete_out = run_aimemo(&home, &["delete", id_str]);
     let delete_stdout = String::from_utf8_lossy(&delete_out.stdout);
-    assert!(delete_out.status.success(), "memo delete failed: {:?}", delete_out);
+    assert!(delete_out.status.success(), "aimemo delete failed: {:?}", delete_out);
     assert!(
         delete_stdout.contains(&format!("deleted entry #{}", id_str)),
         "unexpected delete output: {}",
@@ -99,7 +99,7 @@ fn test_delete() {
     );
 
     // Delete again should say not found
-    let delete2_out = run_memo(&home, &["delete", id_str]);
+    let delete2_out = run_aimemo(&home, &["delete", id_str]);
     let delete2_stdout = String::from_utf8_lossy(&delete2_out.stdout);
     assert!(
         delete2_stdout.contains("not found"),
@@ -112,13 +112,13 @@ fn test_delete() {
 fn test_inject_contains_header() {
     let home = temp_home("inject");
 
-    run_memo(&home, &["log", "some context entry"]);
+    run_aimemo(&home, &["log", "some context entry"]);
 
-    let out = run_memo(&home, &["inject"]);
+    let out = run_aimemo(&home, &["inject"]);
     let stdout = String::from_utf8_lossy(&out.stdout);
-    assert!(out.status.success(), "memo inject failed: {:?}", out);
+    assert!(out.status.success(), "aimemo inject failed: {:?}", out);
     assert!(
-        stdout.contains("## memo context"),
+        stdout.contains("## aimemo context"),
         "inject output missing header: {}",
         stdout
     );
@@ -128,22 +128,22 @@ fn test_inject_contains_header() {
 fn test_stats_exits_zero() {
     let home = temp_home("stats");
 
-    run_memo(&home, &["log", "stats entry"]);
+    run_aimemo(&home, &["log", "stats entry"]);
 
-    let out = run_memo(&home, &["stats"]);
-    assert!(out.status.success(), "memo stats failed: {:?}", out);
+    let out = run_aimemo(&home, &["stats"]);
+    assert!(out.status.success(), "aimemo stats failed: {:?}", out);
 }
 
 #[test]
 fn test_list_by_tag() {
     let home = temp_home("list_tag");
 
-    run_memo(&home, &["log", "tagged entry", "--tag", "mytag"]);
-    run_memo(&home, &["log", "untagged entry"]);
+    run_aimemo(&home, &["log", "tagged entry", "--tag", "mytag"]);
+    run_aimemo(&home, &["log", "untagged entry"]);
 
-    let out = run_memo(&home, &["list", "--tag", "mytag"]);
+    let out = run_aimemo(&home, &["list", "--tag", "mytag"]);
     let stdout = String::from_utf8_lossy(&out.stdout);
-    assert!(out.status.success(), "memo list --tag failed: {:?}", out);
+    assert!(out.status.success(), "aimemo list --tag failed: {:?}", out);
     assert!(stdout.contains("tagged entry"), "tagged entry missing: {}", stdout);
     assert!(!stdout.contains("untagged entry"), "untagged entry shown: {}", stdout);
 }
@@ -152,13 +152,13 @@ fn test_list_by_tag() {
 fn test_tags_command() {
     let home = temp_home("tags_cmd");
 
-    run_memo(&home, &["log", "a", "--tag", "alpha"]);
-    run_memo(&home, &["log", "b", "--tag", "alpha"]);
-    run_memo(&home, &["log", "c", "--tag", "beta"]);
+    run_aimemo(&home, &["log", "a", "--tag", "alpha"]);
+    run_aimemo(&home, &["log", "b", "--tag", "alpha"]);
+    run_aimemo(&home, &["log", "c", "--tag", "beta"]);
 
-    let out = run_memo(&home, &["tags"]);
+    let out = run_aimemo(&home, &["tags"]);
     let stdout = String::from_utf8_lossy(&out.stdout);
-    assert!(out.status.success(), "memo tags failed: {:?}", out);
+    assert!(out.status.success(), "aimemo tags failed: {:?}", out);
     assert!(stdout.contains("alpha"), "alpha not listed: {}", stdout);
     assert!(stdout.contains("beta"), "beta not listed: {}", stdout);
     // alpha should appear before beta (count 2 vs 1)
@@ -172,7 +172,7 @@ fn test_log_stdin() {
     let home = temp_home("stdin");
     let project = home.join("project");
 
-    let mut child = Command::new(memo_bin())
+    let mut child = Command::new(aimemo_bin())
         .args(["log", "-"])
         .env("HOME", &home)
         .current_dir(&project)
@@ -181,7 +181,7 @@ fn test_log_stdin() {
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
         .spawn()
-        .expect("spawn memo");
+        .expect("spawn aimemo");
 
     use std::io::Write;
     if let Some(stdin) = child.stdin.take() {
@@ -189,17 +189,17 @@ fn test_log_stdin() {
         stdin.write_all(b"stdin message\n").expect("write stdin");
     }
 
-    let output = child.wait_with_output().expect("wait for memo");
+    let output = child.wait_with_output().expect("wait for aimemo");
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(output.status.success(), "memo log - failed: {:?}", output);
+    assert!(output.status.success(), "aimemo log - failed: {:?}", output);
     assert!(stdout.contains("logged: stdin message"), "unexpected: {}", stdout);
 }
 
-// ── memo capture (PostToolUse hook) ──────────────────────────────────────────
+// ── aimemo capture (PostToolUse hook) ──────────────────────────────────────────
 
 fn run_capture_with_payload(home: &PathBuf, payload: &str) -> std::process::Output {
     let project = home.join("project");
-    let mut child = Command::new(memo_bin())
+    let mut child = Command::new(aimemo_bin())
         .args(["capture"])
         .env("HOME", home)
         .current_dir(&project)
@@ -208,11 +208,11 @@ fn run_capture_with_payload(home: &PathBuf, payload: &str) -> std::process::Outp
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
         .spawn()
-        .expect("spawn memo capture");
+        .expect("spawn aimemo capture");
     if let Some(mut stdin) = child.stdin.take() {
         stdin.write_all(payload.as_bytes()).expect("write payload");
     }
-    child.wait_with_output().expect("wait for memo capture")
+    child.wait_with_output().expect("wait for aimemo capture")
 }
 
 #[test]
@@ -237,7 +237,7 @@ fn test_capture_write_with_fn_description() {
     assert!(out.status.success(), "capture failed: {:?}", out);
 
     // The captured entry should include the fn description
-    let list_out = run_memo(&home, &["list"]);
+    let list_out = run_aimemo(&home, &["list"]);
     let list_stdout = String::from_utf8_lossy(&list_out.stdout);
     assert!(
         list_stdout.contains("wrote src/auth.rs: added fn handle_login"),
@@ -264,7 +264,7 @@ fn test_capture_edit_with_fn_description() {
 
     run_capture_with_payload(&home, &payload.to_string());
 
-    let list_out = run_memo(&home, &["list"]);
+    let list_out = run_aimemo(&home, &["list"]);
     let stdout = String::from_utf8_lossy(&list_out.stdout);
     assert!(
         stdout.contains("edited src/db.rs: added fn connect_pool"),
@@ -290,7 +290,7 @@ fn test_capture_edit_no_pattern_falls_back() {
 
     run_capture_with_payload(&home, &payload.to_string());
 
-    let list_out = run_memo(&home, &["list"]);
+    let list_out = run_aimemo(&home, &["list"]);
     let stdout = String::from_utf8_lossy(&list_out.stdout);
     assert!(
         stdout.contains("edited config.toml"),
@@ -298,17 +298,17 @@ fn test_capture_edit_no_pattern_falls_back() {
     );
 }
 
-// ── memo doctor ───────────────────────────────────────────────────────────────
+// ── aimemo doctor ───────────────────────────────────────────────────────────────
 
 #[test]
 fn test_doctor_after_setup() {
     let home = temp_home("doctor_setup");
 
     // Run setup first
-    let setup_out = run_memo(&home, &["setup"]);
+    let setup_out = run_aimemo(&home, &["setup"]);
     assert!(setup_out.status.success(), "setup failed: {:?}", setup_out);
 
-    let out = run_memo_with_bin_on_path(&home, &["doctor"], true);
+    let out = run_aimemo_with_bin_on_path(&home, &["doctor"], true);
     let stdout = String::from_utf8_lossy(&out.stdout);
     assert!(out.status.success(), "doctor failed: {:?}", out);
 
@@ -320,7 +320,7 @@ fn test_doctor_after_setup() {
 fn test_doctor_without_setup_reports_issues() {
     let home = temp_home("doctor_no_setup");
 
-    let out = run_memo(&home, &["doctor"]);
+    let out = run_aimemo(&home, &["doctor"]);
     let stdout = String::from_utf8_lossy(&out.stdout);
 
     // Should report issues

@@ -426,12 +426,12 @@ fn db_path(project_id: &str) -> Result<PathBuf> {
 }
 
 fn dirs_base() -> Result<PathBuf> {
-    if let Ok(dir) = std::env::var("MEMO_DB_DIR") {
+    if let Ok(dir) = std::env::var("AIMEMO_DB_DIR") {
         return Ok(PathBuf::from(dir));
     }
     Ok(dirs::data_local_dir()
         .ok_or_else(|| anyhow::anyhow!("cannot find data dir"))?
-        .join("memo"))
+        .join("aimemo"))
 }
 
 /// Generate a session ID using nanosecond timestamp combined with the process ID

@@ -10,7 +10,7 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 
 #[derive(Parser)]
-#[command(name = "memo", version, about = "Persistent memory for AI agents")]
+#[command(name = "aimemo", version, about = "Persistent memory for AI agents")]
 struct Cli {
     #[command(subcommand)]
     command: Command,
@@ -47,7 +47,7 @@ enum Command {
         #[arg(long)]
         claude: bool,
 
-        /// Write block into .cursor/rules/memo.mdc instead of stdout
+        /// Write block into .cursor/rules/aimemo.mdc instead of stdout
         #[arg(long)]
         cursor: bool,
 
@@ -105,13 +105,13 @@ enum Command {
     /// Show memory statistics
     Stats,
 
-    /// Set up memo for Claude Code (writes CLAUDE.md + installs Stop hook)
+    /// Set up aimemo for Claude Code (writes CLAUDE.md + installs Stop hook)
     Setup,
 
     /// Edit a memory entry in $EDITOR
     Edit { id: i64 },
 
-    /// Check memo health for this project
+    /// Check aimemo health for this project
     Doctor,
 
     /// Export memory entries to JSON
@@ -123,7 +123,7 @@ enum Command {
 
     /// Import memory entries from a JSON export file
     Import {
-        /// JSON file to import (created by `memo export`)
+        /// JSON file to import (created by `aimemo export`)
         file: PathBuf,
         /// Skip confirmation prompt
         #[arg(long, short = 'y')]
@@ -162,12 +162,12 @@ enum Command {
         yes: bool,
     },
 
-    /// Sync memory with the team shared file (.memo/memory.json)
+    /// Sync memory with the team shared file (.aimemo/memory.json)
     Sync {
-        /// Only export to .memo/memory.json (don't import)
+        /// Only export to .aimemo/memory.json (don't import)
         #[arg(long)]
         export_only: bool,
-        /// Only import from .memo/memory.json (don't export)
+        /// Only import from .aimemo/memory.json (don't export)
         #[arg(long)]
         import_only: bool,
     },
@@ -260,17 +260,17 @@ fn main() -> Result<()> {
     match cli.command {
         Command::Init => {
             let store = Store::open(&dir)?;
-            println!("memo initialized for project {}", &store.project_id[..8]);
-            println!("db: ~/.local/share/memo/{}.db", store.project_id);
+            println!("aimemo initialized for project {}", &store.project_id[..8]);
+            println!("db: ~/.local/share/aimemo/{}.db", store.project_id);
             println!();
             println!("Add the following to your project's CLAUDE.md:");
             println!();
             println!("```");
-            println!("<!-- memo:start -->");
-            println!("<!-- memo:end -->");
+            println!("<!-- aimemo:start -->");
+            println!("<!-- aimemo:end -->");
             println!("```");
             println!();
-            println!("Or run `memo inject --claude` to write it automatically.");
+            println!("Or run `aimemo inject --claude` to write it automatically.");
         }
 
         Command::Log { message, tag } => {
@@ -318,26 +318,26 @@ fn main() -> Result<()> {
             if all {
                 let updated = inject_all(&block, &dir)?;
                 for file in &updated {
-                    println!("memo context written to {file}");
+                    println!("aimemo context written to {file}");
                 }
                 if updated.is_empty() {
-                    println!("no configured agent files found — run `memo setup` first");
+                    println!("no configured agent files found — run `aimemo setup` first");
                 }
             } else if claude {
                 write_to_claude_md(&block, &dir)?;
-                println!("memo context written to CLAUDE.md");
+                println!("aimemo context written to CLAUDE.md");
             } else if cursor {
                 write_to_cursor_rules(&block, &dir)?;
-                println!("memo context written to .cursor/rules/memo.mdc");
+                println!("aimemo context written to .cursor/rules/aimemo.mdc");
             } else if windsurf {
                 write_to_windsurf_rules(&block, &dir)?;
-                println!("memo context written to .windsurfrules");
+                println!("aimemo context written to .windsurfrules");
             } else if copilot {
                 write_to_copilot_instructions(&block, &dir)?;
-                println!("memo context written to .github/copilot-instructions.md");
+                println!("aimemo context written to .github/copilot-instructions.md");
             } else if vscode {
                 write_to_vscode(&block, &dir)?;
-                println!("memo context written to .github/copilot-instructions.md");
+                println!("aimemo context written to .github/copilot-instructions.md");
             } else {
                 match format {
                     OutputFormat::Json => println!("{}", block.render_json()?),
@@ -363,8 +363,8 @@ fn main() -> Result<()> {
 
             if entries.is_empty() {
                 println!("no entries yet.");
-                println!("  run `memo bootstrap` to import git history, or");
-                println!("  run `memo log \"<message>\"` to save your first entry.");
+                println!("  run `aimemo bootstrap` to import git history, or");
+                println!("  run `aimemo log \"<message>\"` to save your first entry.");
                 return Ok(());
             }
             entries.iter().for_each(print_entry);
@@ -420,10 +420,10 @@ fn main() -> Result<()> {
 
         Command::Setup => {
             let result = setup(&dir)?;
-            println!("✓ CLAUDE.md updated with memo instructions and context block");
+            println!("✓ CLAUDE.md updated with aimemo instructions and context block");
             if result.claude_hook_installed {
                 println!("✓ Stop hook installed in .claude/settings.json");
-                println!("  → memo inject --claude will run automatically at end of each Claude Code session");
+                println!("  → aimemo inject --claude will run automatically at end of each Claude Code session");
             } else {
                 println!("  Claude Code Stop hook already present, skipped");
             }
@@ -438,25 +438,25 @@ fn main() -> Result<()> {
                 println!("  PostToolUse hook already present, skipped");
             }
             if result.cursor_rules_written {
-                println!("✓ Cursor rules written to .cursor/rules/memo.mdc");
-                println!("  → memo inject --cursor will update context at session start");
+                println!("✓ Cursor rules written to .cursor/rules/aimemo.mdc");
+                println!("  → aimemo inject --cursor will update context at session start");
             } else {
                 println!("  Cursor rules already present, skipped");
             }
             if result.windsurf_rules_written {
                 println!("✓ Windsurf rules written to .windsurfrules");
-                println!("  → memo inject --windsurf will update context at session start");
+                println!("  → aimemo inject --windsurf will update context at session start");
             } else {
                 println!("  Windsurf rules already present, skipped");
             }
             if result.copilot_instructions_written {
                 println!("✓ Copilot instructions written to .github/copilot-instructions.md");
-                println!("  → memo inject --copilot will update context at session start");
+                println!("  → aimemo inject --copilot will update context at session start");
             } else {
                 println!("  Copilot instructions already present, skipped");
             }
             println!();
-            println!("Run `memo log \"<message>\"` to start logging.");
+            println!("Run `aimemo log \"<message>\"` to start logging.");
         }
 
         Command::Stats => {
@@ -474,7 +474,7 @@ fn main() -> Result<()> {
             let store = Store::open(&dir)?;
             let entry = store.get(id)?.ok_or_else(|| anyhow::anyhow!("entry #{id} not found"))?;
 
-            let tmp_path = std::env::temp_dir().join(format!("memo_edit_{id}.txt"));
+            let tmp_path = std::env::temp_dir().join(format!("aimemo_edit_{id}.txt"));
             std::fs::write(&tmp_path, &entry.content)?;
 
             let editor = std::env::var("VISUAL")
@@ -536,14 +536,14 @@ fn main() -> Result<()> {
             // 1. binary
             let path_env = std::env::var("PATH").unwrap_or_default();
             let sep = if cfg!(windows) { ';' } else { ':' };
-            let bin_name = if cfg!(windows) { "memo.exe" } else { "memo" };
+            let bin_name = if cfg!(windows) { "aimemo.exe" } else { "aimemo" };
             let found_memo = path_env.split(sep).find_map(|p| {
                 let c = std::path::Path::new(p).join(bin_name);
                 if c.exists() { Some(c) } else { None }
             });
             match &found_memo {
                 Some(p) => println!("  {ok} binary: {}", p.display()),
-                None    => { println!("  {warn} memo not found in PATH — add it to PATH"); issues += 1; }
+                None    => { println!("  {warn} aimemo not found in PATH — add it to PATH"); issues += 1; }
             }
 
             // 2. database
@@ -566,12 +566,12 @@ fn main() -> Result<()> {
             if claude_md.exists() {
                 let md = std::fs::read_to_string(&claude_md).unwrap_or_default();
                 check!(
-                    md.contains("<!-- memo:start -->"),
-                    "CLAUDE.md: memo context block present",
-                    "CLAUDE.md: no memo block — run `memo setup`"
+                    md.contains("<!-- aimemo:start -->"),
+                    "CLAUDE.md: aimemo context block present",
+                    "CLAUDE.md: no aimemo block — run `aimemo setup`"
                 );
             } else {
-                println!("  {fail} CLAUDE.md not found — run `memo setup`");
+                println!("  {fail} CLAUDE.md not found — run `aimemo setup`");
                 issues += 1;
             }
 
@@ -611,54 +611,54 @@ fn main() -> Result<()> {
                 // Stop hook
                 let stop_cmds = hook_commands("Stop");
                 check!(
-                    stop_cmds.iter().any(|c| c.contains("memo inject")),
-                    "hook Stop: memo inject --claude",
-                    "hook Stop: missing — run `memo setup`"
+                    stop_cmds.iter().any(|c| c.contains("aimemo inject")),
+                    "hook Stop: aimemo inject --claude",
+                    "hook Stop: missing — run `aimemo setup`"
                 );
 
                 // UserPromptSubmit hook
                 let start_cmds = hook_commands("UserPromptSubmit");
                 check!(
-                    start_cmds.iter().any(|c| c.contains("memo inject")),
-                    "hook UserPromptSubmit: memo inject --claude --once",
-                    "hook UserPromptSubmit: missing — run `memo setup`"
+                    start_cmds.iter().any(|c| c.contains("aimemo inject")),
+                    "hook UserPromptSubmit: aimemo inject --claude --once",
+                    "hook UserPromptSubmit: missing — run `aimemo setup`"
                 );
 
                 // PostToolUse hook
                 let post_cmds = hook_commands("PostToolUse");
                 let post_matchers = hook_matchers("PostToolUse");
-                let has_capture = post_cmds.iter().any(|c| c.contains("memo capture"));
+                let has_capture = post_cmds.iter().any(|c| c.contains("aimemo capture"));
                 let has_matcher = post_matchers.iter().any(|m| m.contains("Write"));
                 check!(
                     has_capture && has_matcher,
-                    "hook PostToolUse: memo capture (Write|Edit|MultiEdit)",
-                    "hook PostToolUse: missing or incomplete — run `memo setup`"
+                    "hook PostToolUse: aimemo capture (Write|Edit|MultiEdit)",
+                    "hook PostToolUse: missing or incomplete — run `aimemo setup`"
                 );
             } else {
-                println!("  {fail} .claude/settings.json not found — run `memo setup`");
+                println!("  {fail} .claude/settings.json not found — run `aimemo setup`");
                 issues += 1;
             }
 
             // ── Cursor ────────────────────────────────────────────────────────
-            let cursor_rules = dir.join(".cursor").join("rules").join("memo.mdc");
+            let cursor_rules = dir.join(".cursor").join("rules").join("aimemo.mdc");
             if cursor_rules.exists() {
                 println!();
                 println!("{}", "Cursor".bold());
                 let contents = std::fs::read_to_string(&cursor_rules).unwrap_or_default();
                 check!(
                     contents.contains("alwaysApply: true"),
-                    ".cursor/rules/memo.mdc: alwaysApply: true",
-                    ".cursor/rules/memo.mdc: missing alwaysApply: true — run `memo setup`"
+                    ".cursor/rules/aimemo.mdc: alwaysApply: true",
+                    ".cursor/rules/aimemo.mdc: missing alwaysApply: true — run `aimemo setup`"
                 );
                 check!(
-                    contents.contains("<!-- memo:start -->"),
-                    ".cursor/rules/memo.mdc: memo context block present",
-                    ".cursor/rules/memo.mdc: no memo block — run `memo inject --cursor`"
+                    contents.contains("<!-- aimemo:start -->"),
+                    ".cursor/rules/aimemo.mdc: aimemo context block present",
+                    ".cursor/rules/aimemo.mdc: no aimemo block — run `aimemo inject --cursor`"
                 );
             } else if dir.join(".cursor").exists() {
                 println!();
                 println!("{}", "Cursor".bold());
-                notice!(".cursor/ found but memo.mdc missing — run `memo setup` to add it");
+                notice!(".cursor/ found but aimemo.mdc missing — run `aimemo setup` to add it");
             }
 
             // ── Windsurf ──────────────────────────────────────────────────────
@@ -668,14 +668,14 @@ fn main() -> Result<()> {
                 println!("{}", "Windsurf".bold());
                 let contents = std::fs::read_to_string(&windsurf_rules).unwrap_or_default();
                 check!(
-                    contents.contains("memo inject"),
-                    ".windsurfrules: memo instructions present",
-                    ".windsurfrules: no memo instructions — run `memo setup`"
+                    contents.contains("aimemo inject"),
+                    ".windsurfrules: aimemo instructions present",
+                    ".windsurfrules: no aimemo instructions — run `aimemo setup`"
                 );
                 check!(
-                    contents.contains("<!-- memo:start -->"),
-                    ".windsurfrules: memo context block present",
-                    ".windsurfrules: no memo block — run `memo inject --windsurf`"
+                    contents.contains("<!-- aimemo:start -->"),
+                    ".windsurfrules: aimemo context block present",
+                    ".windsurfrules: no aimemo block — run `aimemo inject --windsurf`"
                 );
             }
 
@@ -686,14 +686,14 @@ fn main() -> Result<()> {
                 println!("{}", "Copilot / VS Code".bold());
                 let contents = std::fs::read_to_string(&copilot).unwrap_or_default();
                 check!(
-                    contents.contains("memo inject"),
-                    ".github/copilot-instructions.md: memo instructions present",
-                    ".github/copilot-instructions.md: no memo instructions — run `memo setup`"
+                    contents.contains("aimemo inject"),
+                    ".github/copilot-instructions.md: aimemo instructions present",
+                    ".github/copilot-instructions.md: no aimemo instructions — run `aimemo setup`"
                 );
                 check!(
-                    contents.contains("<!-- memo:start -->"),
-                    ".github/copilot-instructions.md: memo context block present",
-                    ".github/copilot-instructions.md: no memo block — run `memo inject --copilot`"
+                    contents.contains("<!-- aimemo:start -->"),
+                    ".github/copilot-instructions.md: aimemo context block present",
+                    ".github/copilot-instructions.md: no aimemo block — run `aimemo inject --copilot`"
                 );
             }
 
@@ -701,7 +701,7 @@ fn main() -> Result<()> {
             if issues == 0 {
                 println!("{}", "All checks passed.".green().bold());
             } else {
-                println!("{}", format!("{issues} issue(s) found — run `memo setup` to fix.").yellow());
+                println!("{}", format!("{issues} issue(s) found — run `aimemo setup` to fix.").yellow());
             }
         }
 
@@ -731,7 +731,7 @@ fn main() -> Result<()> {
             let content = std::fs::read_to_string(&file)
                 .with_context(|| format!("failed to read {}", file.display()))?;
             let data: serde_json::Value = serde_json::from_str(&content)
-                .context("invalid JSON — expected output from `memo export`")?;
+                .context("invalid JSON — expected output from `aimemo export`")?;
             let entries = data["entries"]
                 .as_array()
                 .ok_or_else(|| anyhow::anyhow!("missing 'entries' array in JSON"))?;
@@ -847,7 +847,7 @@ fn main() -> Result<()> {
 
         Command::Sync { export_only, import_only } => {
             let store = Store::open(&dir)?;
-            let sync_path = dir.join(".memo").join("memory.json");
+            let sync_path = dir.join(".aimemo").join("memory.json");
 
             let mut imported = 0usize;
 
@@ -855,7 +855,7 @@ fn main() -> Result<()> {
             if !export_only && sync_path.exists() {
                 let content = std::fs::read_to_string(&sync_path)?;
                 let data: serde_json::Value = serde_json::from_str(&content)
-                    .context("invalid .memo/memory.json — delete it and re-run memo sync")?;
+                    .context("invalid .aimemo/memory.json — delete it and re-run aimemo sync")?;
                 if let Some(entries) = data["entries"].as_array() {
                     for entry in entries {
                         let content_str = entry["content"].as_str().unwrap_or("");
@@ -889,15 +889,15 @@ fn main() -> Result<()> {
                         "tags": e.tags,
                     })).collect::<Vec<_>>(),
                 });
-                let memo_dir = dir.join(".memo");
+                let memo_dir = dir.join(".aimemo");
                 std::fs::create_dir_all(&memo_dir)?;
                 std::fs::write(&sync_path, serde_json::to_string_pretty(&data)?)?;
                 let exported = entries.len();
                 if import_only {
                     println!("imported {imported} new entries");
                 } else {
-                    println!("synced: imported {imported} new entries, exported {exported} entries to .memo/memory.json");
-                    println!("commit .memo/memory.json to share with your team");
+                    println!("synced: imported {imported} new entries, exported {exported} entries to .aimemo/memory.json");
+                    println!("commit .aimemo/memory.json to share with your team");
                 }
             } else {
                 println!("imported {imported} new entries");
@@ -932,7 +932,7 @@ fn main() -> Result<()> {
             let block = InjectBlock::build(&store)?;
             let project_short = &store.project_id[..8];
 
-            println!("{}", format!("memo context — project {project_short} ({} entries)", block.entry_count).dimmed());
+            println!("{}", format!("aimemo context — project {project_short} ({} entries)", block.entry_count).dimmed());
             println!();
 
             if !block.pinned_entries.is_empty() {
@@ -990,8 +990,8 @@ fn main() -> Result<()> {
                 && block.open_todos.is_empty()
             {
                 println!("{}", "no context yet.".dimmed());
-                println!("{}", "  run `memo bootstrap` to import git history, or".dimmed());
-                println!("{}", "  run `memo log \"<message>\"` to save your first entry.".dimmed());
+                println!("{}", "  run `aimemo bootstrap` to import git history, or".dimmed());
+                println!("{}", "  run `aimemo log \"<message>\"` to save your first entry.".dimmed());
                 println!();
             }
 

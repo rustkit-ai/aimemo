@@ -1,16 +1,16 @@
 [package]
-name = "memo-agent"
+name = "aimemo"
 version.workspace = true
 edition.workspace = true
 repository.workspace = true
 license.workspace = true
-description = "Persistent memory for AI coding agents"
+description = "Persistent memory for AI coding agents — gives AI agents context across sessions"
 keywords = ["ai", "agents", "memory", "cli", "productivity"]
 categories = ["command-line-utilities", "development-tools"]
 readme = "../README.md"
 
 [[bin]]
-name = "memo"
+name = "aimemo"
 path = "src/main.rs"
 
 [dependencies]

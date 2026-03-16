@@ -45,7 +45,7 @@ impl InjectBlock {
 
     pub fn render_text(&self) -> String {
         use std::fmt::Write;
-        let mut out = String::from("## memo context\n");
+        let mut out = String::from("## aimemo context\n");
 
         // Pinned entries always shown first
         for e in &self.pinned_entries {
@@ -169,17 +169,17 @@ pub fn setup(project_dir: &Path) -> Result<SetupResult> {
 pub fn write_to_claude_md(block: &InjectBlock, project_dir: &Path) -> Result<()> {
     patch_markdown_section(
         &project_dir.join("CLAUDE.md"),
-        "<!-- memo:start -->",
-        "<!-- memo:end -->",
+        "<!-- aimemo:start -->",
+        "<!-- aimemo:end -->",
         &block.render_text(),
     )
 }
 
 pub fn write_to_cursor_rules(block: &InjectBlock, project_dir: &Path) -> Result<()> {
     patch_markdown_section(
-        &project_dir.join(".cursor").join("rules").join("memo.mdc"),
-        "<!-- memo:start -->",
-        "<!-- memo:end -->",
+        &project_dir.join(".cursor").join("rules").join("aimemo.mdc"),
+        "<!-- aimemo:start -->",
+        "<!-- aimemo:end -->",
         &block.render_text(),
     )
 }
@@ -187,8 +187,8 @@ pub fn write_to_cursor_rules(block: &InjectBlock, project_dir: &Path) -> Result<
 pub fn write_to_windsurf_rules(block: &InjectBlock, project_dir: &Path) -> Result<()> {
     patch_markdown_section(
         &project_dir.join(".windsurfrules"),
-        "<!-- memo:start -->",
-        "<!-- memo:end -->",
+        "<!-- aimemo:start -->",
+        "<!-- aimemo:end -->",
         &block.render_text(),
     )
 }
@@ -196,8 +196,8 @@ pub fn write_to_windsurf_rules(block: &InjectBlock, project_dir: &Path) -> Resul
 pub fn write_to_copilot_instructions(block: &InjectBlock, project_dir: &Path) -> Result<()> {
     patch_markdown_section(
         &project_dir.join(".github").join("copilot-instructions.md"),
-        "<!-- memo:start -->",
-        "<!-- memo:end -->",
+        "<!-- aimemo:start -->",
+        "<!-- aimemo:end -->",
         &block.render_text(),
     )
 }
@@ -207,7 +207,7 @@ pub fn write_to_vscode(block: &InjectBlock, project_dir: &Path) -> Result<()> {
 }
 
 /// Inject context into all configured agent files found in project_dir.
-/// Each file is only updated if it already exists and contains a memo block marker.
+/// Each file is only updated if it already exists and contains an aimemo block marker.
 /// Returns the list of files updated.
 pub fn inject_all(block: &InjectBlock, project_dir: &Path) -> Result<Vec<String>> {
     let mut updated = Vec::new();
@@ -215,16 +215,16 @@ pub fn inject_all(block: &InjectBlock, project_dir: &Path) -> Result<Vec<String>
     let claude_md = project_dir.join("CLAUDE.md");
     if claude_md.exists() {
         let content = fs::read_to_string(&claude_md).unwrap_or_default();
-        if content.contains("<!-- memo:start -->") {
+        if content.contains("<!-- aimemo:start -->") {
             write_to_claude_md(block, project_dir)?;
             updated.push("CLAUDE.md".to_string());
         }
     }
 
-    let cursor_rules = project_dir.join(".cursor").join("rules").join("memo.mdc");
+    let cursor_rules = project_dir.join(".cursor").join("rules").join("aimemo.mdc");
     if cursor_rules.exists() {
         write_to_cursor_rules(block, project_dir)?;
-        updated.push(".cursor/rules/memo.mdc".to_string());
+        updated.push(".cursor/rules/aimemo.mdc".to_string());
     }
 
     let windsurf = project_dir.join(".windsurfrules");
@@ -236,7 +236,7 @@ pub fn inject_all(block: &InjectBlock, project_dir: &Path) -> Result<Vec<String>
     let copilot = project_dir.join(".github").join("copilot-instructions.md");
     if copilot.exists() {
         let content = fs::read_to_string(&copilot).unwrap_or_default();
-        if content.contains("<!-- memo:start -->") {
+        if content.contains("<!-- aimemo:start -->") {
             write_to_copilot_instructions(block, project_dir)?;
             updated.push(".github/copilot-instructions.md".to_string());
         }
@@ -246,32 +246,32 @@ pub fn inject_all(block: &InjectBlock, project_dir: &Path) -> Result<Vec<String>
 }
 
 const CLAUDE_INSTRUCTIONS: &str = "\
-- At session start: run `memo inject --claude` to load context from previous sessions\n\
-- After modifying any file: run `memo log \"modified {filename}: {one-line reason}\"`\n\
-- When you identify something to fix later: run `memo log \"todo: {description}\"`\n\
-- At session end: run `memo recap \"{what was done} — next: {what comes next}\"` then `memo inject --claude`\n";
+- At session start: run `aimemo inject --claude` to load context from previous sessions\n\
+- After modifying any file: run `aimemo log \"modified {filename}: {one-line reason}\"`\n\
+- When you identify something to fix later: run `aimemo log \"todo: {description}\"`\n\
+- At session end: run `aimemo recap \"{what was done} — next: {what comes next}\"` then `aimemo inject --claude`\n";
 
 const CURSOR_INSTRUCTIONS: &str = "\
-- At session start: run `memo inject --cursor` to load context from previous sessions\n\
-- After modifying any file: run `memo log \"modified {filename}: {one-line reason}\"`\n\
-- When you identify something to fix later: run `memo log \"todo: {description}\"`\n\
-- At session end: run `memo recap \"{what was done} — next: {what comes next}\"` then `memo inject --cursor`\n";
+- At session start: run `aimemo inject --cursor` to load context from previous sessions\n\
+- After modifying any file: run `aimemo log \"modified {filename}: {one-line reason}\"`\n\
+- When you identify something to fix later: run `aimemo log \"todo: {description}\"`\n\
+- At session end: run `aimemo recap \"{what was done} — next: {what comes next}\"` then `aimemo inject --cursor`\n";
 
 const WINDSURF_INSTRUCTIONS: &str = "\
-- At session start: run `memo inject --windsurf` to load context from previous sessions\n\
-- After modifying any file: run `memo log \"modified {filename}: {one-line reason}\"`\n\
-- When you identify something to fix later: run `memo log \"todo: {description}\"`\n\
-- At session end: run `memo recap \"{what was done} — next: {what comes next}\"` then `memo inject --windsurf`\n";
+- At session start: run `aimemo inject --windsurf` to load context from previous sessions\n\
+- After modifying any file: run `aimemo log \"modified {filename}: {one-line reason}\"`\n\
+- When you identify something to fix later: run `aimemo log \"todo: {description}\"`\n\
+- At session end: run `aimemo recap \"{what was done} — next: {what comes next}\"` then `aimemo inject --windsurf`\n";
 
 const COPILOT_INSTRUCTIONS: &str = "\
-- At session start: run `memo inject --copilot` to load context from previous sessions\n\
-- After modifying any file: run `memo log \"modified {filename}: {one-line reason}\"`\n\
-- When you identify something to fix later: run `memo log \"todo: {description}\"`\n\
-- At session end: run `memo recap \"{what was done} — next: {what comes next}\"` then `memo inject --copilot`\n";
+- At session start: run `aimemo inject --copilot` to load context from previous sessions\n\
+- After modifying any file: run `aimemo log \"modified {filename}: {one-line reason}\"`\n\
+- When you identify something to fix later: run `aimemo log \"todo: {description}\"`\n\
+- At session end: run `aimemo recap \"{what was done} — next: {what comes next}\"` then `aimemo inject --copilot`\n";
 
 fn write_cursor_rules(project_dir: &Path) -> Result<bool> {
     let rules_dir = project_dir.join(".cursor").join("rules");
-    let rules_path = rules_dir.join("memo.mdc");
+    let rules_path = rules_dir.join("aimemo.mdc");
 
     if rules_path.exists() {
         return Ok(false);
@@ -281,8 +281,8 @@ fn write_cursor_rules(project_dir: &Path) -> Result<bool> {
     fs::write(
         &rules_path,
         format!(
-            "---\ndescription: memo persistent memory instructions\nalwaysApply: true\n---\n\n\
-             ## memo — persistent agent memory\n{CURSOR_INSTRUCTIONS}"
+            "---\ndescription: aimemo persistent memory instructions\nalwaysApply: true\n---\n\n\
+             ## aimemo — persistent memory\n{CURSOR_INSTRUCTIONS}"
         ),
     )?;
     Ok(true)
@@ -295,7 +295,7 @@ fn write_windsurf_rules(project_dir: &Path) -> Result<bool> {
     }
     fs::write(
         &path,
-        format!("# memo — persistent agent memory\n{WINDSURF_INSTRUCTIONS}"),
+        format!("# aimemo — persistent memory\n{WINDSURF_INSTRUCTIONS}"),
     )?;
     Ok(true)
 }
@@ -305,7 +305,7 @@ fn write_copilot_instructions(project_dir: &Path) -> Result<bool> {
     let path = github_dir.join("copilot-instructions.md");
     fs::create_dir_all(&github_dir)?;
 
-    let header = "## memo — persistent agent memory";
+    let header = "## aimemo — persistent memory";
     let block = format!("{header}\n{COPILOT_INSTRUCTIONS}");
 
     if path.exists() {
@@ -323,9 +323,9 @@ fn write_copilot_instructions(project_dir: &Path) -> Result<bool> {
 fn write_instructions_to_claude_md(project_dir: &Path) -> Result<()> {
     patch_markdown_section(
         &project_dir.join("CLAUDE.md"),
-        "<!-- memo:instructions:start -->",
-        "<!-- memo:instructions:end -->",
-        &format!("## memo — persistent agent memory\n{CLAUDE_INSTRUCTIONS}"),
+        "<!-- aimemo:instructions:start -->",
+        "<!-- aimemo:instructions:end -->",
+        &format!("## aimemo — persistent memory\n{CLAUDE_INSTRUCTIONS}"),
     )
 }
 
@@ -393,7 +393,7 @@ fn install_stop_hook(project_dir: &Path) -> Result<bool> {
                                 hs.iter().any(|cmd| {
                                     cmd.get("command")
                                         .and_then(|c| c.as_str())
-                                        .is_some_and(|s| s.contains("memo inject"))
+                                        .is_some_and(|s| s.contains("aimemo inject"))
                                 })
                             })
                     })
@@ -401,7 +401,7 @@ fn install_stop_hook(project_dir: &Path) -> Result<bool> {
         },
         |root| {
             let memo_hook = serde_json::json!({
-                "hooks": [{ "type": "command", "command": "memo inject --claude" }]
+                "hooks": [{ "type": "command", "command": "aimemo inject --claude" }]
             });
             match root["hooks"]["Stop"].as_array_mut() {
                 Some(arr) => arr.push(memo_hook),
@@ -426,7 +426,7 @@ fn install_post_tool_hook(project_dir: &Path) -> Result<bool> {
                                 hs.iter().any(|cmd| {
                                     cmd.get("command")
                                         .and_then(|c| c.as_str())
-                                        .is_some_and(|s| s.contains("memo capture"))
+                                        .is_some_and(|s| s.contains("aimemo capture"))
                                 })
                             })
                     })
@@ -436,7 +436,7 @@ fn install_post_tool_hook(project_dir: &Path) -> Result<bool> {
             // Only capture Write, Edit, MultiEdit tool calls
             let capture_hook = serde_json::json!({
                 "matcher": "Write|Edit|MultiEdit",
-                "hooks": [{ "type": "command", "command": "memo capture" }]
+                "hooks": [{ "type": "command", "command": "aimemo capture" }]
             });
             match root["hooks"]["PostToolUse"].as_array_mut() {
                 Some(arr) => arr.push(capture_hook),
@@ -461,7 +461,7 @@ fn install_start_hook(project_dir: &Path) -> Result<bool> {
                                 hs.iter().any(|cmd| {
                                     cmd.get("command")
                                         .and_then(|c| c.as_str())
-                                        .is_some_and(|s| s.contains("memo inject") && s.contains("--once"))
+                                        .is_some_and(|s| s.contains("aimemo inject") && s.contains("--once"))
                                 })
                             })
                     })
@@ -469,7 +469,7 @@ fn install_start_hook(project_dir: &Path) -> Result<bool> {
         },
         |root| {
             let memo_hook = serde_json::json!({
-                "hooks": [{ "type": "command", "command": "memo inject --claude --once" }]
+                "hooks": [{ "type": "command", "command": "aimemo inject --claude --once" }]
             });
             match root["hooks"]["UserPromptSubmit"].as_array_mut() {
                 Some(arr) => arr.push(memo_hook),
@@ -488,7 +488,7 @@ mod tests {
     fn test_render_text_empty() {
         let block = InjectBlock::empty();
         let text = block.render_text();
-        assert!(text.contains("## memo context"));
+        assert!(text.contains("## aimemo context"));
         assert!(text.contains("no entries yet"));
     }
 
@@ -509,7 +509,7 @@ mod tests {
 
     #[test]
     fn test_patch_markdown_section_create_and_replace() {
-        let dir = env::temp_dir().join(format!("memo_hooks_test_{}", std::process::id()));
+        let dir = env::temp_dir().join(format!("aimemo_hooks_test_{}", std::process::id()));
         fs::create_dir_all(&dir).unwrap();
         let path = dir.join("CLAUDE.md");
 
@@ -524,7 +524,7 @@ mod tests {
 
     #[test]
     fn test_write_to_claude_md() {
-        let dir = env::temp_dir().join(format!("memo_hooks_write_{}", std::process::id()));
+        let dir = env::temp_dir().join(format!("aimemo_hooks_write_{}", std::process::id()));
         fs::create_dir_all(&dir).unwrap();
 
         let block = InjectBlock {
@@ -538,12 +538,12 @@ mod tests {
 
         write_to_claude_md(&block, &dir).unwrap();
         let content = fs::read_to_string(dir.join("CLAUDE.md")).unwrap();
-        assert!(content.contains("<!-- memo:start -->"));
+        assert!(content.contains("<!-- aimemo:start -->"));
         assert!(content.contains("recent tags: refactor"));
 
         write_to_claude_md(&block, &dir).unwrap();
         assert_eq!(
-            fs::read_to_string(dir.join("CLAUDE.md")).unwrap().matches("<!-- memo:start -->").count(),
+            fs::read_to_string(dir.join("CLAUDE.md")).unwrap().matches("<!-- aimemo:start -->").count(),
             1
         );
     }

@@ -1,3 +1,8 @@
+---
+description: aimemo persistent memory instructions
+alwaysApply: true
+---
+
 ## aimemo — persistent memory
 - Run `aimemo inject` at the start of every session to recall context
 - Run `aimemo log "<what you did>"` after each significant task

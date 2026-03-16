@@ -67,6 +67,6 @@ jobs:
       - name: Check binary size (unix)
         if: runner.os != 'Windows'
         run: |
-          SIZE=$(stat -c%s target/release/memo 2>/dev/null || stat -f%z target/release/memo)
+          SIZE=$(stat -c%s target/release/aimemo 2>/dev/null || stat -f%z target/release/aimemo)
           echo "Binary size: $SIZE bytes"
           [ "$SIZE" -lt 5242880 ] && echo "OK: under 5MB" || (echo "FAIL: over 5MB" && exit 1)

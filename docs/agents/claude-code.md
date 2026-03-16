@@ -1,6 +1,6 @@
-# memo-agent × Claude Code
+# aimemo × Claude Code
 
-Claude Code reads `CLAUDE.md` automatically at the start of every session. `memo setup` installs **three hooks** and writes a context block into `CLAUDE.md` — the full memory loop runs with zero manual steps, ever.
+Claude Code reads `CLAUDE.md` automatically at the start of every session. `aimemo setup` installs **three hooks** and writes a context block into `CLAUDE.md` — the full memory loop runs with zero manual steps, ever.
 
 ---
 
@@ -9,13 +9,13 @@ Claude Code reads `CLAUDE.md` automatically at the start of every session. `memo
 Run once in your project root:
 
 ```sh
-memo setup
+aimemo setup
 ```
 
 Then bootstrap from your git history so the agent has context from day one:
 
 ```sh
-memo bootstrap
+aimemo bootstrap
 ```
 
 ---
@@ -26,9 +26,9 @@ memo bootstrap
 
 | Hook | Trigger | What it does |
 |---|---|---|
-| `PostToolUse` | After every Write / Edit / MultiEdit | Runs `memo capture` — auto-logs the file with a code description |
-| `UserPromptSubmit` | At the start of each session | Runs `memo inject --claude --once` — injects fresh context |
-| `Stop` | When you close Claude Code | Runs `memo inject --claude` — saves context for next session |
+| `PostToolUse` | After every Write / Edit / MultiEdit | Runs `aimemo capture` — auto-logs the file with a code description |
+| `UserPromptSubmit` | At the start of each session | Runs `aimemo inject --claude --once` — injects fresh context |
+| `Stop` | When you close Claude Code | Runs `aimemo inject --claude` — saves context for next session |
 
 **`.claude/settings.json`** (excerpt):
 
@@ -38,17 +38,17 @@ memo bootstrap
     "PostToolUse": [
       {
         "matcher": "Write|Edit|MultiEdit",
-        "hooks": [{ "type": "command", "command": "memo capture" }]
+        "hooks": [{ "type": "command", "command": "aimemo capture" }]
       }
     ],
     "UserPromptSubmit": [
       {
-        "hooks": [{ "type": "command", "command": "memo inject --claude --once" }]
+        "hooks": [{ "type": "command", "command": "aimemo inject --claude --once" }]
       }
     ],
     "Stop": [
       {
-        "hooks": [{ "type": "command", "command": "memo inject --claude" }]
+        "hooks": [{ "type": "command", "command": "aimemo inject --claude" }]
       }
     ]
   }
@@ -58,18 +58,18 @@ memo bootstrap
 **`CLAUDE.md`** (excerpt):
 
 ```markdown
-<!-- memo:instructions:start -->
-## memo — persistent agent memory
-- At session start: run `memo inject --claude` to load context from previous sessions
-- After modifying any file: run `memo log "modified {filename}: {one-line reason}"`
-- When you identify something to fix later: run `memo log "todo: {description}"`
-- At session end: run `memo recap "{what was done} — next: {what comes next}"` then `memo inject --claude`
-<!-- memo:instructions:end -->
+<!-- aimemo:instructions:start -->
+## aimemo — persistent memory
+- At session start: run `aimemo inject --claude` to load context from previous sessions
+- After modifying any file: run `aimemo log "modified {filename}: {one-line reason}"`
+- When you identify something to fix later: run `aimemo log "todo: {description}"`
+- At session end: run `aimemo recap "{what was done} — next: {what comes next}"` then `aimemo inject --claude`
+<!-- aimemo:instructions:end -->
 
-<!-- memo:start -->
-## memo context
+<!-- aimemo:start -->
+## aimemo context
 last: (no entries yet)
-<!-- memo:end -->
+<!-- aimemo:end -->
 ```
 
 ---
@@ -80,7 +80,7 @@ last: (no entries yet)
 Open Claude Code
       │
       ▼
-UserPromptSubmit hook → memo inject --claude --once
+UserPromptSubmit hook → aimemo inject --claude --once
       │  (injects context only if new entries exist)
       ▼
 Claude reads CLAUDE.md ←── recap + recent entries + open todos
@@ -89,24 +89,24 @@ Claude reads CLAUDE.md ←── recap + recent entries + open todos
 You work — Claude edits files
       │
       ▼
-PostToolUse hook → memo capture
+PostToolUse hook → aimemo capture
       │  (logs "wrote src/auth.rs: added fn handle_login"
       │   or  "edited src/db/pool.rs: added fn connect_pool"
       │   or  "edited src/auth.rs (3 changes)" if no pattern matched)
       ▼
 Claude logs semantic context:
-  memo log "modified src/auth.rs: extracted JWT validation"
-  memo log "todo: add refresh token endpoint"
+  aimemo log "modified src/auth.rs: extracted JWT validation"
+  aimemo log "todo: add refresh token endpoint"
       │
       ▼
 At session end:
-  memo recap "implemented JWT auth — next: refresh token endpoint"
+  aimemo recap "implemented JWT auth — next: refresh token endpoint"
       │
       ▼
 You close Claude Code
       │
       ▼
-Stop hook → memo inject --claude
+Stop hook → aimemo inject --claude
       │
       ▼
 CLAUDE.md updated silently — ready for next session
@@ -117,7 +117,7 @@ CLAUDE.md updated silently — ready for next session
 ## What the context block looks like
 
 ```
-## memo context
+## aimemo context
 recap (2026-03-15): "implemented JWT auth — next: refresh token endpoint"
 recent (2026-03-15): "wrote src/auth/jwt.rs: added fn validate_token"
 recent (2026-03-15): "edited src/auth/jwt.rs: added fn refresh_token"
@@ -133,7 +133,7 @@ recent tags: auth · jwt · auto
 ```
 You: where did we leave off?
 
-Claude: Based on memo — last session you implemented JWT auth.
+Claude: Based on aimemo — last session you implemented JWT auth.
         The recap says: "next: refresh token endpoint".
         There's an open todo for that. Should I start there?
 ```
@@ -143,12 +143,12 @@ Claude: Based on memo — last session you implemented JWT auth.
 ## Key commands
 
 ```sh
-memo recap "<summary>"    # log end-of-session summary (shown prominently next session)
-memo todo list            # see all open todos
-memo todo done <id>       # mark a todo as done
-memo bootstrap            # import recent git commits as memory entries
-memo inject --claude      # manually update CLAUDE.md
-memo doctor               # check hooks, DB, and all agent config files
+aimemo recap "<summary>"    # log end-of-session summary (shown prominently next session)
+aimemo todo list            # see all open todos
+aimemo todo done <id>       # mark a todo as done
+aimemo bootstrap            # import recent git commits as memory entries
+aimemo inject --claude      # manually update CLAUDE.md
+aimemo doctor               # check hooks, DB, and all agent config files
 ```
 
 ---
@@ -156,27 +156,27 @@ memo doctor               # check hooks, DB, and all agent config files
 ## Verify setup
 
 ```sh
-memo doctor
+aimemo doctor
 ```
 
 Example output on a healthy project:
 
 ```
 Core
-  ✓ binary: /usr/local/bin/memo
-  ✓ database: ~/.local/share/memo/abc12345.db (42 entries)
+  ✓ binary: /usr/local/bin/aimemo
+  ✓ database: ~/.local/share/aimemo/abc12345.db (42 entries)
 
 Claude Code
-  ✓ CLAUDE.md: memo context block present
-  ✓ hook Stop: memo inject --claude
-  ✓ hook UserPromptSubmit: memo inject --claude --once
-  ✓ hook PostToolUse: memo capture (Write|Edit|MultiEdit)
+  ✓ CLAUDE.md: aimemo context block present
+  ✓ hook Stop: aimemo inject --claude
+  ✓ hook UserPromptSubmit: aimemo inject --claude --once
+  ✓ hook PostToolUse: aimemo capture (Write|Edit|MultiEdit)
 
 Cursor
-  ✓ .cursor/rules/memo.mdc: alwaysApply: true
-  ✓ .cursor/rules/memo.mdc: memo context block present
+  ✓ .cursor/rules/aimemo.mdc: alwaysApply: true
+  ✓ .cursor/rules/aimemo.mdc: aimemo context block present
 
 All checks passed.
 ```
 
-If anything is missing, run `memo setup` again — it is idempotent.
+If anything is missing, run `aimemo setup` again — it is idempotent.

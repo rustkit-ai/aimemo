@@ -9,7 +9,7 @@ A clear description of what went wrong.
 
 **To reproduce**
 ```sh
-memo <command that fails>
+aimemo <command that fails>
 ```
 
 **Expected behavior**
@@ -17,7 +17,7 @@ What you expected to happen.
 
 **Environment**
 - OS: (e.g. macOS 15, Ubuntu 24.04)
-- memo version: (`memo --version`)
+- aimemo version: (`aimemo --version`)
 - Install method: (cargo / curl / brew)
 
 **Additional context**

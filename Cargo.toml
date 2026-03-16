@@ -1,11 +1,11 @@
 [workspace]
-members = ["memo-agent"]
+members = ["aimemo"]
 resolver = "2"
 
 [workspace.package]
 version = "0.1.8"
 edition = "2024"
-repository = "https://github.com/rustkit-ai/memo-agent"
+repository = "https://github.com/rustkit-ai/aimemo"
 license = "MIT"
 
 [workspace.dependencies]

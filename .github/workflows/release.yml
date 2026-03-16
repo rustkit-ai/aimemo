@@ -72,30 +72,30 @@ jobs:
 
       - name: Strip binary (unix)
         if: runner.os != 'Windows'
-        run: ${{ matrix.strip_cmd }} target/${{ matrix.target }}/release/memo
+        run: ${{ matrix.strip_cmd }} target/${{ matrix.target }}/release/aimemo
 
       - name: Package (unix)
         if: runner.os != 'Windows'
         run: |
           cd target/${{ matrix.target }}/release
-          tar czf memo-${{ matrix.target }}.tar.gz memo
-          mv memo-${{ matrix.target }}.tar.gz $GITHUB_WORKSPACE/
+          tar czf aimemo-${{ matrix.target }}.tar.gz aimemo
+          mv aimemo-${{ matrix.target }}.tar.gz $GITHUB_WORKSPACE/
 
       - name: Package (windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           cd target/${{ matrix.target }}/release
-          Compress-Archive -Path memo.exe -DestinationPath $env:GITHUB_WORKSPACE/memo-${{ matrix.target }}.zip
+          Compress-Archive -Path aimemo.exe -DestinationPath $env:GITHUB_WORKSPACE/aimemo-${{ matrix.target }}.zip
 
       - name: Upload to GitHub Release (unix)
         if: runner.os != 'Windows'
         uses: softprops/action-gh-release@v2
         with:
-          files: memo-${{ matrix.target }}.tar.gz
+          files: aimemo-${{ matrix.target }}.tar.gz
 
       - name: Upload to GitHub Release (windows)
         if: runner.os == 'Windows'
         uses: softprops/action-gh-release@v2
         with:
-          files: memo-${{ matrix.target }}.zip
+          files: aimemo-${{ matrix.target }}.zip

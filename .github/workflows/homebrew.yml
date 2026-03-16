@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   update-formula:
-    name: Update Formula/memo.rb
+    name: Update Formula/aimemo.rb
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,7 +25,7 @@ jobs:
           VERSION=${{ steps.version.outputs.version }}
           for i in $(seq 1 12); do
             COUNT=$(curl -fsSL \
-              "https://api.github.com/repos/rustkit-ai/memo-agent/releases/tags/v${VERSION}" \
+              "https://api.github.com/repos/rustkit-ai/aimemo/releases/tags/v${VERSION}" \
               | jq '.assets | length')
             echo "Assets available: $COUNT"
             [ "$COUNT" -ge 4 ] && break
@@ -36,22 +36,22 @@ jobs:
       - name: Compute SHA256 and update formula
         run: |
           VERSION=${{ steps.version.outputs.version }}
-          BASE="https://github.com/rustkit-ai/memo-agent/releases/download/v${VERSION}"
+          BASE="https://github.com/rustkit-ai/aimemo/releases/download/v${VERSION}"
 
           for target in aarch64-apple-darwin x86_64-apple-darwin aarch64-unknown-linux-gnu x86_64-unknown-linux-gnu; do
-            sha=$(curl -fsSL "${BASE}/memo-${target}.tar.gz" | sha256sum | awk '{print $1}')
+            sha=$(curl -fsSL "${BASE}/aimemo-${target}.tar.gz" | sha256sum | awk '{print $1}')
             echo "${target}: ${sha}"
             escaped=$(echo "$target" | sed 's/\./\\./g; s/-/\\-/g')
-            sed -i "/memo-${escaped}\.tar\.gz/{n;s|sha256 .*|sha256 \"${sha}\"|}" Formula/memo.rb
+            sed -i "/aimemo-${escaped}\.tar\.gz/{n;s|sha256 .*|sha256 \"${sha}\"|}" Formula/aimemo.rb
           done
 
-          sed -i "s/version \".*\"/version \"${VERSION}\"/" Formula/memo.rb
-          cat Formula/memo.rb
+          sed -i "s/version \".*\"/version \"${VERSION}\"/" Formula/aimemo.rb
+          cat Formula/aimemo.rb
 
       - name: Commit updated formula
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Formula/memo.rb
+          git add Formula/aimemo.rb
           git diff --staged --quiet || git commit -m "Update Homebrew formula to v${{ steps.version.outputs.version }}"
           git push

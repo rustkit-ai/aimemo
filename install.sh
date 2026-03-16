@@ -1,8 +1,8 @@
 #!/usr/bin/env sh
 set -e
 
-REPO="rustkit-ai/memo-agent"
-BIN="memo"
+REPO="rustkit-ai/aimemo"
+BIN="aimemo"
 
 # Detect OS
 OS="$(uname -s)"
@@ -33,10 +33,10 @@ elif [ "$OS_NAME" = "macos" ]; then
     TARGET="${ARCH_NAME}-apple-darwin"
 fi
 
-ASSET="memo-${TARGET}.tar.gz"
+ASSET="aimemo-${TARGET}.tar.gz"
 URL="https://github.com/${REPO}/releases/latest/download/${ASSET}"
 
-echo "Downloading memo for ${TARGET}..."
+echo "Downloading aimemo for ${TARGET}..."
 
 # Determine install location
 if [ -w /usr/local/bin ]; then
@@ -62,14 +62,14 @@ fi
 tar xzf "$TMP_DIR/$ASSET" -C "$TMP_DIR"
 install -m 755 "$TMP_DIR/$BIN" "$INSTALL_DIR/$BIN"
 
-echo "memo installed to $INSTALL_DIR/memo"
+echo "aimemo installed to $INSTALL_DIR/aimemo"
 
 # Remind user to add to PATH if needed
 case ":${PATH}:" in
     *":$INSTALL_DIR:"*) ;;
     *)
         echo ""
-        echo "Add memo to your PATH:"
+        echo "Add aimemo to your PATH:"
         echo "  export PATH=\"$INSTALL_DIR:\$PATH\""
         ;;
 esac
