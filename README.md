@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.svg" alt="aimemo — Persistent memory for AI coding agents" width="100%"/>
+  <img src="https://raw.githubusercontent.com/rustkit-ai/aimemo/main/assets/banner.svg" alt="aimemo — Persistent memory for AI coding agents" width="100%"/>
 </p>
 
 <h1 align="center">aimemo — Persistent memory for AI coding agents</h1>
