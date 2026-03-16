@@ -4,7 +4,7 @@ use colored::Colorize;
 use memo_core::{Entry, Store, db_path_for, inject_marker_path};
 use memo_hooks::{inject_all, setup, write_to_claude_md, write_to_copilot_instructions, write_to_cursor_rules, write_to_vscode, write_to_windsurf_rules, InjectBlock};
 use std::io::Read;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[derive(Parser)]
 #[command(name = "memo", version, about = "Persistent memory for AI agents")]
@@ -1002,7 +1002,7 @@ fn main() -> Result<()> {
 
 /// Read a PostToolUse JSON payload from stdin and auto-log modified files.
 /// Called silently by the Claude Code PostToolUse hook — errors are intentionally swallowed.
-fn run_capture(dir: &PathBuf) -> anyhow::Result<()> {
+fn run_capture(dir: &Path) -> anyhow::Result<()> {
     let mut input = String::new();
     std::io::stdin()
         .read_to_string(&mut input)
@@ -1018,7 +1018,7 @@ fn run_capture(dir: &PathBuf) -> anyhow::Result<()> {
     let path = std::path::Path::new(file_path);
     // Canonicalize both paths to resolve symlinks (e.g. /var → /private/var on macOS)
     let canonical_path = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
-    let canonical_dir = dir.canonicalize().unwrap_or_else(|_| dir.clone());
+    let canonical_dir = dir.canonicalize().unwrap_or_else(|_| dir.to_path_buf());
     let rel = canonical_path.strip_prefix(&canonical_dir).unwrap_or(&canonical_path);
     let file = rel.display().to_string();
 
@@ -1096,10 +1096,8 @@ fn describe_diff(old: &str, new: &str) -> Option<String> {
             prev = line;
             continue;
         }
-        if !old_lines.contains(line) {
-            if let Some(desc) = classify_line(line, prev) {
-                return Some(desc);
-            }
+        if !old_lines.contains(line) && let Some(desc) = classify_line(line, prev) {
+            return Some(desc);
         }
         prev = line;
     }
@@ -1124,10 +1122,8 @@ fn classify_line(line: &str, prev: &str) -> Option<String> {
         || prev.starts_with("#[async_std::test");
     if is_test_attr {
         let fn_line = line.trim_start_matches("pub ").trim_start_matches("async ");
-        if fn_line.starts_with("fn ") {
-            if let Some(name) = word_after(fn_line, "fn ") {
-                return Some(format!("added test {name}"));
-            }
+        if fn_line.starts_with("fn ") && let Some(name) = word_after(fn_line, "fn ") {
+            return Some(format!("added test {name}"));
         }
     }
 
@@ -1143,10 +1139,8 @@ fn classify_line(line: &str, prev: &str) -> Option<String> {
 
     // Python / Lua
     for prefix in &["async def ", "def "] {
-        if line.starts_with(prefix) {
-            if let Some(name) = word_after(line, prefix) {
-                return Some(format!("added fn {name}"));
-            }
+        if line.starts_with(prefix) && let Some(name) = word_after(line, prefix) {
+            return Some(format!("added fn {name}"));
         }
     }
 
@@ -1167,10 +1161,10 @@ fn classify_line(line: &str, prev: &str) -> Option<String> {
     for prefix in &["export const ", "const "] {
         if line.starts_with(prefix) {
             let rest = line.trim_start_matches("export ").trim_start_matches("const ");
-            if rest.contains("= (") || rest.contains("= async (") || rest.contains("=>") {
-                if let Some(name) = word_before_assign(rest) {
-                    return Some(format!("added fn {name}"));
-                }
+            if (rest.contains("= (") || rest.contains("= async (") || rest.contains("=>"))
+                && let Some(name) = word_before_assign(rest)
+            {
+                return Some(format!("added fn {name}"));
             }
         }
     }
@@ -1191,10 +1185,8 @@ fn classify_line(line: &str, prev: &str) -> Option<String> {
         ("export class ", "class"),
         ("export abstract class ", "class"),
     ] {
-        if line.starts_with(prefix) {
-            if let Some(name) = word_after(line, prefix) {
-                return Some(format!("added {kind} {name}"));
-            }
+        if line.starts_with(prefix) && let Some(name) = word_after(line, prefix) {
+            return Some(format!("added {kind} {name}"));
         }
     }
 
