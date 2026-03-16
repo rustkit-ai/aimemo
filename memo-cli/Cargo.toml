@@ -14,8 +14,8 @@ name = "memo"
 path = "src/main.rs"
 
 [dependencies]
-memo-core = { path = "../memo-core", version = "0.1.4" }
-memo-hooks = { path = "../memo-hooks", version = "0.1.4" }
+memo-core = { path = "../memo-core", version = "0.1.5" }
+memo-hooks = { path = "../memo-hooks", version = "0.1.5" }
 clap = { workspace = true }
 anyhow = { workspace = true }
 serde_json = { workspace = true }

@@ -2,15 +2,24 @@
   <img src="assets/banner.svg" alt="memo — Persistent memory for AI coding agents" width="100%"/>
 </p>
 
-# memo — Persistent memory for AI coding agents
+<h1 align="center">memo — Persistent memory for AI coding agents</h1>
 
-[![CI](https://github.com/rustkit-ai/memo/actions/workflows/ci.yml/badge.svg)](https://github.com/rustkit-ai/memo/actions/workflows/ci.yml)
-[![crates.io](https://img.shields.io/crates/v/memo-agent.svg)](https://crates.io/crates/memo-agent)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+<p align="center">
+  Give Claude Code, Cursor, Windsurf, and GitHub Copilot a memory that survives across sessions.<br/>
+  One command to set up. Zero manual steps. Works in any project.
+</p>
 
-**Stop starting every AI session from zero.**
+<p align="center">
+  <a href="https://github.com/rustkit-ai/memo/actions/workflows/ci.yml"><img src="https://github.com/rustkit-ai/memo/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
+  <a href="https://crates.io/crates/memo-agent"><img src="https://img.shields.io/crates/v/memo-agent.svg" alt="crates.io"/></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"/></a>
+</p>
 
-`memo` gives AI agents like Claude Code and Cursor a persistent memory across sessions. One binary, zero dependencies, works in any project.
+---
+
+**Every AI session starts from scratch.** The agent re-reads files it already read, re-discovers conventions it already learned, asks questions it already asked. On a large codebase this wastes hundreds of tokens and minutes of context-building — every single time.
+
+`memo` fixes this with a compact context block (~80 tokens) injected at session start. The agent writes it. The agent reads it. You just work.
 
 ```
 $ memo inject
@@ -23,17 +32,20 @@ recent tags: refactor · auth · bug
 
 ---
 
-## The problem
+## Supported agents
 
-Every new AI session starts from scratch. The agent re-reads files it already read, re-discovers conventions it already learned, asks questions it already asked. On a large codebase this costs hundreds of tokens and minutes of context-building — every single time.
-
-`memo` fixes this with a compact context block (~80 tokens) injected at session start. Written by the agent, read next time.
+| Agent | Auto-inject | Context file |
+|---|---|---|
+| **Claude Code** | Yes — Stop hook runs automatically at session end | `CLAUDE.md` |
+| **Cursor** | Agent-triggered at session start | `.cursor/rules/memo.mdc` |
+| **Windsurf** | Agent-triggered at session start | `.windsurfrules` |
+| **GitHub Copilot** | Agent-triggered at session start | `.github/copilot-instructions.md` |
 
 ---
 
 ## Install
 
-**cargo** (recommended):
+**cargo**:
 ```sh
 cargo install memo-agent
 ```
@@ -51,30 +63,30 @@ brew install memo
 
 ---
 
-## How a session works
+## Setup — one command, all agents
 
-### 1. One-time setup
-
-Run this once in your project:
+Run this once in your project root:
 
 ```sh
 memo setup
 ```
 
-`memo setup` configures both **Claude Code** and **Cursor** automatically:
+`memo setup` configures every supported agent at once:
 
-| | What it does |
-|---|---|
-| **Claude Code** | Writes instructions into `CLAUDE.md` + installs a Stop hook in `.claude/settings.json` so context refreshes automatically at end of every session |
-| **Cursor** | Writes `.cursor/rules/memo.mdc` with `alwaysApply: true` so Cursor picks up the instructions on every session |
+- **Claude Code** — writes instructions into `CLAUDE.md` and installs a Stop hook in `.claude/settings.json` so context refreshes automatically when you close a session
+- **Cursor** — writes `.cursor/rules/memo.mdc` with `alwaysApply: true`
+- **Windsurf** — writes `.windsurfrules`
+- **GitHub Copilot** — writes `.github/copilot-instructions.md`
 
 You never have to think about it again.
 
 ---
 
-### 2. Work normally
+## How it works
 
-Open Claude Code or Cursor and work as usual. The agent logs what it does using `memo log` as it goes.
+### 1. Work normally
+
+Your agent logs what it does using `memo log` as it goes:
 
 ```
 You: implement the password reset flow
@@ -84,11 +96,13 @@ Agent: [works on the feature]
        memo log "todo: add rate limiting on /reset endpoint"
 ```
 
----
+### 2. Session ends — context updates automatically
 
-### 3. Session ends — CLAUDE.md updates automatically
+**Claude Code**: the Stop hook fires and runs `memo inject --claude`. `CLAUDE.md` is updated silently in the background.
 
-When you close Claude Code, the Stop hook fires and runs `memo inject --claude`. Your `CLAUDE.md` is updated with a fresh context block:
+**Cursor / Windsurf / Copilot**: at the start of the next session, the agent runs its inject command before doing anything else.
+
+The context block written to your rules file:
 
 ```markdown
 <!-- memo:start -->
@@ -99,68 +113,57 @@ recent tags: auth · security · todo
 <!-- memo:end -->
 ```
 
-No manual steps. No copy-pasting. It just happens.
-
----
-
-### 4. Next session — Claude knows where it left off
-
-You open Claude Code the next day. Claude reads `CLAUDE.md` automatically at startup and immediately knows:
-
-- What was done last session
-- What's next on the todo list
-- What areas of the codebase were touched
+### 3. Next session — the agent knows where it left off
 
 ```
 You: what did we do last time?
 
-Claude: Based on memo — you implemented password reset with an email token,
-        1h expiry, and bcrypt hash. Still need to add rate limiting on /reset.
+Agent: Based on memo — you implemented password reset with an email token,
+       1h expiry, and bcrypt hash. Still need to add rate limiting on /reset.
+       Want me to start there?
 ```
 
-No re-exploration. No repeated questions. Claude picks up exactly where it left off.
+No re-exploration. No repeated questions. Every session picks up exactly where the last one ended.
 
 ---
 
 ## The full loop
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                                                         │
-│   memo setup          ← run once                       │
-│        │                                               │
-│        ▼                                               │
-│   Open Claude Code                                     │
-│        │                                               │
-│        ▼                                               │
-│   Claude reads CLAUDE.md  ←── context from last time   │
-│        │                                               │
-│        ▼                                               │
-│   Work: tasks, fixes, features                         │
-│        │                                               │
-│        ▼                                               │
-│   Claude logs: memo log "..."                          │
-│        │                                               │
-│        ▼                                               │
-│   Session ends → hook fires → CLAUDE.md updated ───┐  │
-│                                                     │  │
-│   Next session ◄────────────────────────────────────┘  │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│   memo setup              ← run once, configures all       │
+│        │                    agents automatically           │
+│        ▼                                                   │
+│   Open Claude Code / Cursor / Windsurf / Copilot           │
+│        │                                                   │
+│        ▼                                                   │
+│   Agent reads context file  ←── memory from last session   │
+│        │                                                   │
+│        ▼                                                   │
+│   Work: tasks, fixes, features                             │
+│        │                                                   │
+│        ▼                                                   │
+│   Agent logs with memo log "..."                           │
+│        │                                                   │
+│        ▼                                                   │
+│   Session ends → context file updated ─────────────────┐  │
+│                                                         │  │
+│   Next session ◄────────────────────────────────────────┘  │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## With any other agent
+## Agent guides
 
-Add this to your rules file or system prompt:
+Step-by-step integration guide for each agent:
 
-```markdown
-## memo — persistent agent memory
-- Run `memo inject` at the start of every session to recall context
-- Run `memo log "<what you did>"` after each significant task
-- Run `memo log "todo: <next step>"` before ending the session
-```
+- [Claude Code — automatic memory via Stop hook](docs/agents/claude-code.md)
+- [Cursor — persistent context with alwaysApply rules](docs/agents/cursor.md)
+- [Windsurf — session memory via .windsurfrules](docs/agents/windsurf.md)
+- [GitHub Copilot — persistent instructions across sessions](docs/agents/copilot.md)
 
 ---
 
@@ -168,29 +171,32 @@ Add this to your rules file or system prompt:
 
 | Command | Description |
 |---|---|
-| `memo setup` | One-time Claude Code integration (CLAUDE.md + Stop hook) |
+| `memo setup` | One-time setup for all agents |
 | `memo init` | Initialize project memory |
 | `memo log "<message>"` | Save a memory entry |
-| `memo log "<message>" --tag refactor` | Save with one or more tags |
+| `memo log "<message>" --tag refactor` | Save with a tag |
 | `memo log -` | Read message from stdin |
 | `memo inject` | Print context block to stdout |
-| `memo inject --claude` | Write context block into CLAUDE.md |
+| `memo inject --claude` | Write context into `CLAUDE.md` |
+| `memo inject --cursor` | Write context into `.cursor/rules/memo.mdc` |
+| `memo inject --windsurf` | Write context into `.windsurfrules` |
+| `memo inject --copilot` | Write context into `.github/copilot-instructions.md` |
 | `memo inject --since 7d` | Limit context to last 7 days |
 | `memo inject --format json` | JSON output for programmatic use |
 | `memo list` | Show last 10 entries |
 | `memo list --all` | Show all entries |
 | `memo list --tag bug` | Filter by tag |
-| `memo search <query>` | Full-text search entries |
+| `memo search <query>` | Full-text search across all entries |
 | `memo delete <id>` | Delete a specific entry |
 | `memo tags` | List all tags with usage counts |
-| `memo stats` | Entry count + token savings estimate |
+| `memo stats` | Entry count and token savings estimate |
 | `memo clear` | Clear all memory for current project |
 
 ---
 
-## Why not just use CLAUDE.md?
+## Why not just edit the rules files manually?
 
-You can write to `CLAUDE.md` manually — but that means **you** do the work. `memo` lets the agent maintain its own memory, automatically, without any human intervention between sessions.
+You can — but then **you** do the work. `memo` lets the agent maintain its own memory, automatically, without any human intervention between sessions. The agent writes. The agent reads. You just focus on your code.
 
 ---
 

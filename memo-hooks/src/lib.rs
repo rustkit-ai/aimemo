@@ -77,6 +77,8 @@ impl InjectBlock {
 pub struct SetupResult {
     pub claude_hook_installed: bool,
     pub cursor_rules_written: bool,
+    pub windsurf_rules_written: bool,
+    pub copilot_instructions_written: bool,
 }
 
 pub fn setup(project_dir: &Path) -> Result<SetupResult> {
@@ -87,8 +89,28 @@ pub fn setup(project_dir: &Path) -> Result<SetupResult> {
 
     // Cursor
     let cursor_rules_written = write_cursor_rules(project_dir)?;
+    if cursor_rules_written {
+        write_to_cursor_rules(&InjectBlock::empty(), project_dir)?;
+    }
 
-    Ok(SetupResult { claude_hook_installed, cursor_rules_written })
+    // Windsurf
+    let windsurf_rules_written = write_windsurf_rules(project_dir)?;
+    if windsurf_rules_written {
+        write_to_windsurf_rules(&InjectBlock::empty(), project_dir)?;
+    }
+
+    // GitHub Copilot
+    let copilot_instructions_written = write_copilot_instructions(project_dir)?;
+    if copilot_instructions_written {
+        write_to_copilot_instructions(&InjectBlock::empty(), project_dir)?;
+    }
+
+    Ok(SetupResult {
+        claude_hook_installed,
+        cursor_rules_written,
+        windsurf_rules_written,
+        copilot_instructions_written,
+    })
 }
 
 pub fn write_to_claude_md(block: &InjectBlock, project_dir: &Path) -> Result<()> {
@@ -100,8 +122,50 @@ pub fn write_to_claude_md(block: &InjectBlock, project_dir: &Path) -> Result<()>
     )
 }
 
-const MEMO_INSTRUCTIONS: &str = "\
-- Run `memo inject` at the start of every session to recall context\n\
+pub fn write_to_cursor_rules(block: &InjectBlock, project_dir: &Path) -> Result<()> {
+    patch_markdown_section(
+        &project_dir.join(".cursor").join("rules").join("memo.mdc"),
+        "<!-- memo:start -->",
+        "<!-- memo:end -->",
+        &block.render_text(),
+    )
+}
+
+pub fn write_to_windsurf_rules(block: &InjectBlock, project_dir: &Path) -> Result<()> {
+    patch_markdown_section(
+        &project_dir.join(".windsurfrules"),
+        "<!-- memo:start -->",
+        "<!-- memo:end -->",
+        &block.render_text(),
+    )
+}
+
+pub fn write_to_copilot_instructions(block: &InjectBlock, project_dir: &Path) -> Result<()> {
+    patch_markdown_section(
+        &project_dir.join(".github").join("copilot-instructions.md"),
+        "<!-- memo:start -->",
+        "<!-- memo:end -->",
+        &block.render_text(),
+    )
+}
+
+const CLAUDE_INSTRUCTIONS: &str = "\
+- Run `memo inject --claude` at the start of every session to recall context\n\
+- Run `memo log \"<what you did>\"` after each significant task\n\
+- Run `memo log \"todo: <next step>\"` before ending the session\n";
+
+const CURSOR_INSTRUCTIONS: &str = "\
+- Run `memo inject --cursor` at the start of every session to recall context\n\
+- Run `memo log \"<what you did>\"` after each significant task\n\
+- Run `memo log \"todo: <next step>\"` before ending the session\n";
+
+const WINDSURF_INSTRUCTIONS: &str = "\
+- Run `memo inject --windsurf` at the start of every session to recall context\n\
+- Run `memo log \"<what you did>\"` after each significant task\n\
+- Run `memo log \"todo: <next step>\"` before ending the session\n";
+
+const COPILOT_INSTRUCTIONS: &str = "\
+- Run `memo inject --copilot` at the start of every session to recall context\n\
 - Run `memo log \"<what you did>\"` after each significant task\n\
 - Run `memo log \"todo: <next step>\"` before ending the session\n";
 
@@ -118,9 +182,41 @@ fn write_cursor_rules(project_dir: &Path) -> Result<bool> {
         &rules_path,
         format!(
             "---\ndescription: memo persistent memory instructions\nalwaysApply: true\n---\n\n\
-             ## memo — persistent agent memory\n{MEMO_INSTRUCTIONS}"
+             ## memo — persistent agent memory\n{CURSOR_INSTRUCTIONS}"
         ),
     )?;
+    Ok(true)
+}
+
+fn write_windsurf_rules(project_dir: &Path) -> Result<bool> {
+    let path = project_dir.join(".windsurfrules");
+    if path.exists() {
+        return Ok(false);
+    }
+    fs::write(
+        &path,
+        format!("# memo — persistent agent memory\n{WINDSURF_INSTRUCTIONS}"),
+    )?;
+    Ok(true)
+}
+
+fn write_copilot_instructions(project_dir: &Path) -> Result<bool> {
+    let github_dir = project_dir.join(".github");
+    let path = github_dir.join("copilot-instructions.md");
+    fs::create_dir_all(&github_dir)?;
+
+    let header = "## memo — persistent agent memory";
+    let block = format!("{header}\n{COPILOT_INSTRUCTIONS}");
+
+    if path.exists() {
+        let existing = fs::read_to_string(&path)?;
+        if existing.contains(header) {
+            return Ok(false);
+        }
+        fs::write(&path, format!("{}\n\n{}", existing.trim_end(), block))?;
+    } else {
+        fs::write(&path, block)?;
+    }
     Ok(true)
 }
 
@@ -129,7 +225,7 @@ fn write_instructions_to_claude_md(project_dir: &Path) -> Result<()> {
         &project_dir.join("CLAUDE.md"),
         "<!-- memo:instructions:start -->",
         "<!-- memo:instructions:end -->",
-        &format!("## memo — persistent agent memory\n{MEMO_INSTRUCTIONS}"),
+        &format!("## memo — persistent agent memory\n{CLAUDE_INSTRUCTIONS}"),
     )
 }
 

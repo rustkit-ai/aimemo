@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand, ValueEnum};
 use memo_core::{Entry, Store};
-use memo_hooks::{setup, write_to_claude_md, InjectBlock};
+use memo_hooks::{setup, write_to_claude_md, write_to_copilot_instructions, write_to_cursor_rules, write_to_windsurf_rules, InjectBlock};
 use std::io::Read;
 use std::path::PathBuf;
 
@@ -35,6 +35,18 @@ enum Command {
         /// Write block into CLAUDE.md instead of stdout
         #[arg(long)]
         claude: bool,
+
+        /// Write block into .cursor/rules/memo.mdc instead of stdout
+        #[arg(long)]
+        cursor: bool,
+
+        /// Write block into .windsurfrules instead of stdout
+        #[arg(long)]
+        windsurf: bool,
+
+        /// Write block into .github/copilot-instructions.md instead of stdout
+        #[arg(long)]
+        copilot: bool,
 
         #[arg(long, value_enum, default_value_t = OutputFormat::Text)]
         format: OutputFormat,
@@ -143,7 +155,7 @@ fn main() -> Result<()> {
             println!("logged: {message}");
         }
 
-        Command::Inject { claude, format, since } => {
+        Command::Inject { claude, cursor, windsurf, copilot, format, since } => {
             let store = Store::open(&dir)?;
             let block = match since {
                 Some(s) => InjectBlock::build_since(&store, chrono::Utc::now() - parse_duration(&s)?)?,
@@ -153,6 +165,15 @@ fn main() -> Result<()> {
             if claude {
                 write_to_claude_md(&block, &dir)?;
                 println!("memo context written to CLAUDE.md");
+            } else if cursor {
+                write_to_cursor_rules(&block, &dir)?;
+                println!("memo context written to .cursor/rules/memo.mdc");
+            } else if windsurf {
+                write_to_windsurf_rules(&block, &dir)?;
+                println!("memo context written to .windsurfrules");
+            } else if copilot {
+                write_to_copilot_instructions(&block, &dir)?;
+                println!("memo context written to .github/copilot-instructions.md");
             } else {
                 match format {
                     OutputFormat::Json => println!("{}", block.render_json()?),
@@ -232,8 +253,21 @@ fn main() -> Result<()> {
             }
             if result.cursor_rules_written {
                 println!("✓ Cursor rules written to .cursor/rules/memo.mdc");
+                println!("  → memo inject --cursor will update context at session start");
             } else {
                 println!("  Cursor rules already present, skipped");
+            }
+            if result.windsurf_rules_written {
+                println!("✓ Windsurf rules written to .windsurfrules");
+                println!("  → memo inject --windsurf will update context at session start");
+            } else {
+                println!("  Windsurf rules already present, skipped");
+            }
+            if result.copilot_instructions_written {
+                println!("✓ Copilot instructions written to .github/copilot-instructions.md");
+                println!("  → memo inject --copilot will update context at session start");
+            } else {
+                println!("  Copilot instructions already present, skipped");
             }
             println!();
             println!("Run `memo log \"<message>\"` to start logging.");
